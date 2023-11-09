@@ -18,7 +18,7 @@ const Tab = createBottomTabNavigator();
 
 function MainContainer() {
   return (
-    <NavigationContainer>
+    //<NavigationContainer>
       <Tab.Navigator
         initialRouteName={loginName}
         screenOptions={{
@@ -27,14 +27,12 @@ function MainContainer() {
             tabBarLabelStyle: { paddingBottom: 10, fontSize: 10 },
             tabBarStyle: { padding: 10, height: 70}
         }}>
-        <Tab.Screen title={"Login"} name={loginName} component={Login} />
         <Tab.Screen title={"Dashboard"} name={dashboardName} component={Dashboard}/>
         <Tab.Screen title={"Workouts"} name={workoutsName} component={WorkoutsScreen} />
         <Tab.Screen title={"Settings"} name={settingsName} component={SettingsScreen} />
-        
-
+      
       </Tab.Navigator>
-    </NavigationContainer>
+    //</NavigationContainer>
   );
 }
 

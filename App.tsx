@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type {PropsWithChildren} from 'react';
 import {
   StyleSheet,
@@ -12,6 +12,13 @@ import {
 } from 'react-native/Libraries/NewAppScreen';
 
 import MainContainer from './nav/MainContainer';
+
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { FIREBASE_AUTH } from './FirebaseConfig';
+import LoginScreen from './nav/screens/Login';
+import { User } from 'firebase/auth';
+
 
 type SectionProps = PropsWithChildren<{
   title: string;
@@ -43,15 +50,43 @@ function Section({children, title}: SectionProps): JSX.Element {
   );
 }
 
-function App(): JSX.Element {
+const Stack = createNativeStackNavigator();
+
+function App() {
   const isDarkMode = useColorScheme() === 'dark';
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
+
+  // Handle user state changes
+  useEffect(() => {
+    const subscriber = FIREBASE_AUTH.onAuthStateChanged((newUser: User | null) => {
+      setUser(newUser);
+      if (initializing) setInitializing(false);
+    });
+
+    // Cleanup subscription on unmount
+    return subscriber;
+  }, [initializing]);
+
+  if (initializing) return null; // or some loading component
+
   return (
-    <MainContainer/>
+    <NavigationContainer>
+      <Stack.Navigator>
+        {user ? (
+          // User is signed in
+          <Stack.Screen name="MainContainer" component={MainContainer} options={{ headerShown: false }} />
+        ) : (
+          // No user is signed in
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 

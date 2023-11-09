@@ -53,10 +53,6 @@ export default function Dashboard({ navigation }) {
           <Text style={styles.selectedDate}>
             Your phase for {reformatDate(selectedDate)} --insert phase here--
           </Text>
-
-          <Text style={styles.workoutText}>
-            Workout Routine: --insert workout routine here--
-          </Text>
         </View>
       )}
     </View>
