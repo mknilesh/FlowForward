@@ -1,23 +1,70 @@
 import * as React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { Calendar } from 'react-native-calendars';
+import { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Dimensions, Button } from 'react-native';
+import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
+import { FIRESTORE_DB } from '../../FirebaseConfig';
+import { addDoc, collection } from 'firebase/firestore';
 
 export default function Dashboard({ navigation }) {
-  const [selectedDate, setSelectedDate] = React.useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [periodDates, setPeriodDates] = useState([]);
+  const [menstrualPhase, setMenstrualPhase] = useState('');
 
-  const onDayPress = (day) => {
-    // Handle the selected date here
+  const updateDates = (day) => {
+    const startPeriod = new Date(day.dateString);
+    const newPeriodDates = [startPeriod.toISOString().split('T')[0]];
+
+    for (let i = 1; i <= 4; i++) {
+      let nextDate = new Date(startPeriod);
+      nextDate.setDate(startPeriod.getDate() + i);
+      newPeriodDates.push(nextDate.toISOString().split('T')[0]);
+    }
+
+    setPeriodDates(newPeriodDates);
     setSelectedDate(day.dateString);
   };
 
-  const reformatDate = (dateString) => {
-    const date = new Date(dateString);
-    date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
-
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${month}/${day}`;
+  useEffect(() => {
+    if (periodDates.length > 0) {
+      const today = new Date();
+      const startPeriod = new Date(periodDates[0]);
+      const endPeriod = new Date(periodDates[periodDates.length - 1]);
+      const ovulationDay = new Date(startPeriod);
+      ovulationDay.setDate(startPeriod.getDate() + 14);
+      
+      // Assuming the ovulation phase is about 4 days
+      const startOvulationPhase = new Date(ovulationDay);
+      startOvulationPhase.setDate(ovulationDay.getDate() - 2);
+      const endOvulationPhase = new Date(ovulationDay);
+      endOvulationPhase.setDate(ovulationDay.getDate() + 2);
+  
+      // Menstrual Phase
+      if (today >= startPeriod && today <= endPeriod) {
+        setMenstrualPhase('Menstrual Phase');
+      } 
+      // Follicular Phase
+      else if (today < startOvulationPhase) {
+        setMenstrualPhase('Follicular Phase');
+      } 
+      // Ovulation Phase
+      else if (today >= startOvulationPhase && today <= endOvulationPhase) {
+        setMenstrualPhase('Ovulation Phase');
+      } 
+      // Luteal Phase
+      else {
+        setMenstrualPhase('Luteal Phase');
+      }
+    }
+  }, [periodDates]);
+  
+  const onSubmit = async () => {
+      console.log(periodDates);
   };
+
+  const markedDates = periodDates.reduce((acc, date) => {
+    acc[date] = { selected: true, selectedColor: '#ff8080' };
+    return acc;
+  }, {});
 
   // Get the screen dimensions
   const { width, height } = Dimensions.get('window');
@@ -41,17 +88,16 @@ export default function Dashboard({ navigation }) {
             textMonthFontFamily: 'Montserrat-Bold',
             textDayHeaderFontFamily: 'Montserrat-Bold',
           }}
-          onDayPress={onDayPress}
-          markedDates={{
-            [selectedDate]: { selected: true, selectedColor: '#ff80a0' },
-          }}
+          onDayPress={(day) => updateDates(day)}
+          markedDates={markedDates}
         />
       </View>
 
       {selectedDate && (
         <View>
+          <Button title="Submit Dates" onPress={onSubmit} />
           <Text style={styles.selectedDate}>
-            Your phase for {reformatDate(selectedDate)} --insert phase here--
+            Your phase for today: {(menstrualPhase)}
           </Text>
         </View>
       )}
