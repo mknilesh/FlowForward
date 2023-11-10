@@ -9,7 +9,8 @@ export default function CustomButton({label, onPress}) {
         backgroundColor: '#FF80A0',
         padding: 10,
         borderRadius: 40,
-        marginBottom: 30,
+        marginBottom: 10,
+        marginTop: 10
       }}>
       <Text
         style={{

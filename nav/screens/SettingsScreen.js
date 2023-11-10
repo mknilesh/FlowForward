@@ -3,10 +3,11 @@ import { View, Text } from 'react-native';
 import Slider from '@react-native-community/slider';
 import DropDownPicker from 'react-native-dropdown-picker';
 
-export default function SettingsScreen({ navigation }) {
+export var expertise = "Beginner"
 
+export default function SettingsScreen({ navigation }) {
     const [expertiseOpen, setExpertiseOpen] = useState(false);
-    const [expertise, setExpertise] = useState("Beginner");
+    [expertise, setExpertise] = useState("Beginner");
     const [expertiseList, setExpertiseList] = useState([
         {label: "Beginner", value: "Beginner"}, 
         {label: "Intermediate", value: "Intermediate"}, 
@@ -15,7 +16,7 @@ export default function SettingsScreen({ navigation }) {
 
     const [dayAvailability, setDayAvailability] = useState(1);
     const [workoutDuration, setWorkoutDuration] = useState(30);
-
+    
     return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 20, alignSelf: 'flex-start', paddingLeft: '5%', paddingBottom: 0}}>
