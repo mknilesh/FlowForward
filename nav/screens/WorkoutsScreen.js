@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList } from 'react-native';
 import { expertise } from './SettingsScreen';
 import CustomButton from '../components/CustomButton';
+import { menstrualPhase } from './Dashboard';
 
 export default function WorkoutsScreen({ navigation }) {
     
@@ -27,7 +28,23 @@ export default function WorkoutsScreen({ navigation }) {
                 apiUrl = apiUrl + "?difficulty=expert"
                 break;
         }
-        console.log(expertise)
+        switch(menstrualPhase) {
+            case 'Menstrual Phase':
+                apiUrl += '&type=stretching';
+              break;
+            case 'Follicular Phase':
+                apiUrl += '&type=strength';
+              break;
+            case 'Ovulation Phase':
+                apiUrl += '&type=plyometrics';
+              break;
+            case 'Luteal Phase':
+                apiUrl += '&type=cardio';
+              break;
+            default:
+                apiUrl += ''; 
+          }
+        console.log(menstrualPhase)
         console.log(apiUrl)
         fetch(apiUrl, {
             headers: {
@@ -85,8 +102,8 @@ export default function WorkoutsScreen({ navigation }) {
                 }
         
                 return (
-                    <View style={{ padding: 10, backgroundColor: boxColor, marginVertical: 5, borderRadius: 5 }}>
-                    <Text style={{ fontSize: 18, fontWeight: 'bold', borderBottomWidth: 1, paddingBottom: 5 }}>
+                    <View style={{ paddingLeft: 30, paddingRight:30, paddingTop:10, paddingBottom:10, backgroundColor: boxColor, marginVertical: 5, marginHorizontal: 20, borderRadius: 5 }}>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', borderBottomWidth: 1, paddingBottom: 5 }}>
                         {item.name || "No Name"}
                     </Text>
                     <Text>Muscle Group: {item.muscle || "Unknown"}</Text>

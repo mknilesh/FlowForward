@@ -1,20 +1,19 @@
 
 import * as React from 'react';
 import { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity,Keyboard, Dimensions, Button } from 'react-native';
+import { View, Text, StyleSheet, Linking, TouchableOpacity, Keyboard, Dimensions, Button } from 'react-native';
 import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
-// import {firebase} from '../../FirebaseConfig';
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/analytics';
-import { getAnalytics, setUserId } from "firebase/analytics";
-import {addDoc, collection} from 'firebase/firestore';
 
+export var menstrualPhase = ""
 
 export default function Dashboard({ navigation }) {
  
   var user = firebase.auth().currentUser;
   var name, email, photoUrl, uid, emailVerified;
+  const [allPeriodDates, setAllPeriodDates] = useState([]);
 
   if (user != null) {
     name = user.displayName;
@@ -23,7 +22,6 @@ export default function Dashboard({ navigation }) {
     emailVerified = user.emailVerified;
     uid = user.uid;  
  }
-
 
   const [addData, setAddData] = useState('');
   const addFirestore = (periodDates) => {
@@ -49,7 +47,9 @@ export default function Dashboard({ navigation }) {
 
   const [selectedDate, setSelectedDate] = useState('');
   const [periodDates, setPeriodDates] = useState([]);
-  const [menstrualPhase, setMenstrualPhase] = useState('');
+  [menstrualPhase, setMenstrualPhase] = useState('');
+  const [menstrualPhaseText, setMenstrualPhaseText] = useState('');
+  const [flowText, setFlowText] = useState('');
 
   const updateDates = (day) => {
     const startPeriod = new Date(day.dateString);
@@ -95,19 +95,88 @@ export default function Dashboard({ navigation }) {
       else {
         setMenstrualPhase('Luteal Phase');
       }
+
+      diff = (startPeriod - today) / (24*60*60*1000)
+      if (diff < -4 && diff > -5 ){
+        setFlowText('Light');
+      } else if (diff < -2 && diff > -4) {
+        setFlowText('Medium');
+      } else if (diff < 0 && diff > -2) {
+        setFlowText('Heavy');
+      } else {
+        setFlowText("N/A");
+      }
     }
   }, [periodDates]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const user = firebase.auth().currentUser;
+      if (user) {
+        const datesRef = firebase.firestore().collection('userDates').doc(user.uid);
+        const doc = await datesRef.get();
+        if (doc.exists) {
+          setAllPeriodDates(doc.data().allPeriodDates || []);
+        }
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const onDateSelect = (date) => {
+    const newSelectedDates = {
+      ...selectedDates,
+      [date]: { selected: true, selectedColor: '#007bff' } // Blue color for the selected date
+    };
+    setSelectedDates(newSelectedDates);
+  
+    // Also update periodDates as needed for submission
+    // This assumes you have a way to add or remove dates from periodDates
+    updatePeriodDates(date);
+  };
   
   const onSubmit = async () => {
-      console.log(periodDates);
+    const user = firebase.auth().currentUser;
+    if (user) {
+      const datesRef = firebase.firestore().collection('userDates').doc(user.uid);
       
-
+      const newDateSet = {
+        id: new Date().toISOString(), // Unique ID
+        dates: [...periodDates] // Copy of current period dates
+      };
+  
+      const updatedAllPeriodDates = [...allPeriodDates, newDateSet];
+  
+      // Wait for the Firebase operation to complete before updating the state
+      await datesRef.set({ allPeriodDates: updatedAllPeriodDates });
+  
+      // Update the state with the new dates
+      setAllPeriodDates(updatedAllPeriodDates);
+      
+      // Reset current period dates if necessary
+      setPeriodDates([]);
+  
+      // Log the markedDates for debugging
+      console.log('New markedDates:', getMarkedDates(updatedAllPeriodDates));
+    }
   };
+  
+  // A function to compute marked dates from allPeriodDates
+  function getMarkedDates(allDates) {
+    return allDates.reduce((acc, dateSet) => {
+      dateSet.dates.forEach((date) => {
+        acc[date] = { selected: true, selectedColor: '#ff8080' };
+      });
+      return acc;
+    }, {});
+  }
 
-  const markedDates = periodDates.reduce((acc, date) => {
-    acc[date] = { selected: true, selectedColor: '#ff8080' };
-    return acc;
-  }, {});
+  
+  
+ // Call getMarkedDates to generate markedDates from allPeriodDates
+const markedDates = getMarkedDates(allPeriodDates);
+
 
   // Get the screen dimensions
   const { width, height } = Dimensions.get('window');
@@ -116,6 +185,8 @@ export default function Dashboard({ navigation }) {
     <View style={styles.container}>
       {/* Wrap the Calendar with a View and apply the calendarWrapper style to control the height */}
       <View style={styles.calendarWrapper}>
+        <Button title="+ Submit Dates" onPress={() => { onSubmit(); addFirestore(periodDates); }  } />
+
         <Calendar
           style={styles.calendar}
           theme={{
@@ -138,10 +209,20 @@ export default function Dashboard({ navigation }) {
 
       {selectedDate && (
         <View>
-          <Button title="Submit Dates" onPress={() => { onSubmit(); addFirestore(periodDates); }  } />
           <Text style={styles.selectedDate}>
             Your phase for today: {(menstrualPhase)}
           </Text>
+          <Text style={styles.selectedDate}>
+            Expected Flow: {flowText}
+          </Text>
+          <Text style={{marginHorizontal: 20, marginTop: 20, fontSize: 18}}> 
+            For more information, please refer to the following link:
+          </Text>
+          <TouchableOpacity onPress={() => Linking.openURL('http://flowforward.info')}>
+            <Text style={{color: 'blue', marginLeft: 20, marginTop: 5, fontSize: 18}}>
+              flowforward.info
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
    
@@ -195,8 +276,10 @@ const styles = StyleSheet.create({
   selectedDate: {
     fontSize: 18,
     marginTop: 20,
+    marginLeft: 20,
     fontFamily: 'Montserrat-Bold',
     color: '#ff6b81',
+    justifyContent: 'center'
   },
   workoutText: {
     fontSize: 16,

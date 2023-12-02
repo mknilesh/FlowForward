@@ -18,7 +18,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { FIREBASE_AUTH } from './FirebaseConfig';
 import LoginScreen from './nav/screens/Login';
 import { User } from 'firebase/auth';
+import { LogBox } from 'react-native';
 
+LogBox.ignoreAllLogs();
 
 type SectionProps = PropsWithChildren<{
   title: string;
