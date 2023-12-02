@@ -1,11 +1,52 @@
+
 import * as React from 'react';
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Dimensions, Button } from 'react-native';
+import { useState, useEffect, useContext } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity,Keyboard, Dimensions, Button } from 'react-native';
 import { Calendar, CalendarList, Agenda } from 'react-native-calendars';
-import { FIRESTORE_DB } from '../../FirebaseConfig';
-import { addDoc, collection } from 'firebase/firestore';
+// import {firebase} from '../../FirebaseConfig';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/analytics';
+import { getAnalytics, setUserId } from "firebase/analytics";
+import {addDoc, collection} from 'firebase/firestore';
+
 
 export default function Dashboard({ navigation }) {
+ 
+  var user = firebase.auth().currentUser;
+  var name, email, photoUrl, uid, emailVerified;
+
+  if (user != null) {
+    name = user.displayName;
+    email = user.email;
+    photoUrl = user.photoURL;
+    emailVerified = user.emailVerified;
+    uid = user.uid;  
+ }
+
+
+  const [addData, setAddData] = useState('');
+  const addFirestore = (periodDates) => {
+    const todoRef = firebase.firestore().collection('userDates/'+user.uid+'/' +periodDates);
+        if (true){
+        const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+        const data = {
+          heading: periodDates,
+          createdAt: timestamp
+
+        };
+        todoRef
+        .add(data)
+        .then(() => {
+          setAddData('');
+          Keyboard.dismiss()
+        })
+        .catch((error) => {
+          alert(error);
+        })
+      }
+    }
+
   const [selectedDate, setSelectedDate] = useState('');
   const [periodDates, setPeriodDates] = useState([]);
   const [menstrualPhase, setMenstrualPhase] = useState('');
@@ -59,6 +100,8 @@ export default function Dashboard({ navigation }) {
   
   const onSubmit = async () => {
       console.log(periodDates);
+      
+
   };
 
   const markedDates = periodDates.reduce((acc, date) => {
@@ -95,17 +138,48 @@ export default function Dashboard({ navigation }) {
 
       {selectedDate && (
         <View>
-          <Button title="Submit Dates" onPress={onSubmit} />
+          <Button title="Submit Dates" onPress={() => { onSubmit(); addFirestore(periodDates); }  } />
           <Text style={styles.selectedDate}>
             Your phase for today: {(menstrualPhase)}
           </Text>
         </View>
       )}
+   
+    
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  formContainer : {
+    flexDirection: 'row',
+    height : 80,
+    marginLeft:10,
+    marginRight:10,
+  },
+  input : {
+    height : 48,
+    borderRadius : 5,
+    overFlow: 'hidden',
+    backgroundColor: 'white',
+    paddingLeft: 16,
+    flex:1,
+    marginRight:5
+  },
+  button : {
+    height : 47,
+    borderRadius : 5,
+    overFlow: 'hidden',
+    backgroundColor: '#FFC0CB',
+    width: 80,
+    alignItem:'center',
+    justifyContent: 'center'
+  },
+  buttonText : {
+    color: 'ffffff',
+    fontSize: 20
+  },
+
   container: {
     flex: 1,
     alignItems: 'center',
